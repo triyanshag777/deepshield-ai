@@ -153,3 +153,10 @@ signal fusion (ELA/FFT/symmetry) is specifically included to catch cases a
 single dataset-bound classifier would miss, and is the main technical
 argument for why this ensemble approach is more robust than any one model
 alone.
+
+5. **EXIF + GPS forensics**: extracts camera metadata and embedded GPS
+   location (if present) from real photos — useful for investigators to
+   trace when/where evidence was captured, while honestly flagging that
+   some AI editors (like Google Photos) can preserve original EXIF even
+   after AI-based edits.
+   
