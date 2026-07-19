@@ -1,0 +1,13 @@
+torch>=2.2.0
+torchvision>=0.17.0
+torchaudio>=2.2.0
+transformers>=4.40.0
+accelerate>=0.30.0
+opencv-python>=4.9.0
+Pillow>=10.0.0
+numpy>=1.26.0
+sentence-transformers>=2.7.0
+gradio>=4.30.0
+scipy>=1.12.0
+matplotlib>=3.8.0
+reportlab>=4.1.0
