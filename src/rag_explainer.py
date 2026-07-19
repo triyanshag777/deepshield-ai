@@ -59,71 +59,53 @@ class RAGExplainer:
         hits = util.semantic_search(query_emb, embs, top_k=min(top_k, len(candidates)))[0]
         return [candidates[h["corpus_id"]] for h in hits]
 
+    def get_by_id(self, entry_id: str):
+        """Direct lookup by exact indicator ID."""
+        for e in self.entries:
+            if e["id"] == entry_id:
+                return e
+        return None
+
     def explain(self, scores: dict, threshold: float = 0.5):
-        """
-        scores: dict with keys like model_ensemble_score, ela_score, fft_noise_score,
-                face_symmetry_score, final_score, temporal_flicker_detected (optional)
-        Returns a grounded, human-readable explanation string with citations.
-        """
         final = scores.get("final_score", 0.0)
         verdict = "LIKELY AI-GENERATED / MANIPULATED" if final >= threshold else "LIKELY AUTHENTIC"
 
         lines = [f"Verdict: {verdict}  (confidence: {final*100:.1f}%)", ""]
 
-        # Model ensemble
         model_score = scores.get("model_ensemble_score", 0)
-        query = "classifier ensemble agreement on fake image" if model_score >= threshold else "classifier ensemble uncertainty"
-        hit = self.retrieve(query, top_k=1, signal_filter="model_ensemble")
+        hit = self.get_by_id("model_ensemble_agree" if model_score >= threshold else "model_ensemble_disagree")
         if hit:
-            lines.append(f"• Classifier ensemble score: {model_score*100:.1f}% — {hit[0]['text']}")
+            lines.append(f"• Classifier ensemble score: {model_score*100:.1f}% — {hit['text']}")
 
-        # ELA
         ela = scores.get("ela_score", 0)
         if ela is not None:
-            query = "high compression inconsistency" if ela >= 0.5 else "uniform compression low residual"
-            hit = self.retrieve(query, top_k=1, signal_filter="ela")
+            hit = self.get_by_id("ela_high" if ela >= 0.5 else "ela_low")
             if hit:
-                lines.append(f"• Error Level Analysis: {ela*100:.1f}% anomaly — {hit[0]['text']}")
+                lines.append(f"• Error Level Analysis: {ela*100:.1f}% anomaly — {hit['text']}")
 
-        # FFT
         fft = scores.get("fft_noise_score", 0)
         if fft is not None:
-            query = "GAN upsampling frequency artifact" if fft >= 0.5 else "diffusion smooth spectrum"
-            hit = self.retrieve(query, top_k=1, signal_filter="fft_noise")
+            hit = self.get_by_id("fft_high" if fft >= 0.5 else "fft_diffusion")
             if hit:
-                lines.append(f"• Frequency-domain (FFT) analysis: {fft*100:.1f}% anomaly — {hit[0]['text']}")
+                lines.append(f"• Frequency-domain (FFT) analysis: {fft*100:.1f}% anomaly — {hit['text']}")
 
-        # Face symmetry
         if scores.get("face_found"):
             sym = scores.get("face_symmetry_score", 0)
-            query = "asymmetric facial features artifact" if sym >= 0.5 else "unnatural perfect symmetry"
-            hit = self.retrieve(query, top_k=1, signal_filter="face_symmetry")
+            hit = self.get_by_id("face_symmetry_high" if sym >= 0.5 else "face_symmetry_low")
             if hit:
-                lines.append(f"• Facial symmetry analysis: {sym*100:.1f}% anomaly — {hit[0]['text']}")
+                lines.append(f"• Facial symmetry analysis: {sym*100:.1f}% anomaly — {hit['text']}")
 
-        # Temporal (video only)
         if "temporal_flicker_detected" in scores:
             if scores["temporal_flicker_detected"]:
-                hit = self.retrieve("frame flicker inconsistency", top_k=1, signal_filter="temporal")
+                hit = self.get_by_id("temporal_flicker")
                 if hit:
-                    lines.append(f"• Temporal consistency: FLICKER DETECTED — {hit[0]['text']}")
+                    lines.append(f"• Temporal consistency: FLICKER DETECTED — {hit['text']}")
             else:
                 lines.append("• Temporal consistency: stable across frames (no flicker detected)")
 
         return "\n".join(lines)
 
 
-# ---- Optional: swap in a real generative model for free-form prose ----
 def generate_with_llm(retrieved_texts, scores):
-    """
-    Stub showing how to plug in a real HF text-generation pipeline if you want
-    free-form (rather than templated) prose for the demo. Not called by default
-    to keep inference fast and fully deterministic for a live judging round.
-
-        from transformers import pipeline
-        generator = pipeline("text-generation", model="Qwen/Qwen2.5-1.5B-Instruct")
-        context = " ".join(retrieved_texts)
-        prompt = f"Given these forensic findings: {context}\nWrite a 2-sentence summary."
-        return generator(prompt, max_new_tokens=80)[0]["generated_text"]
-    """
+    """Optional stub - not used by default."""
     raise NotImplementedError("Optional stretch goal - see docstring.")
