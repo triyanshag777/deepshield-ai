@@ -165,4 +165,4 @@ with gr.Blocks(title="DeepShield AI") as demo:
         aud_btn.click(analyze_audio_file, inputs=aud_input, outputs=[aud_summary, aud_explanation])
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(share=True)
